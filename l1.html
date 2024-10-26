@@ -4,10 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Data Decoder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #4a90e2;
+        }
+        p {
+            font-size: 16px;
+            color: #666;
+        }
+        .decoded-data {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: left;
+            font-family: "Courier New", monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .json-key {
+            color: #d32f2f;
+        }
+        .json-string {
+            color: #388e3c;
+        }
+        .json-number {
+            color: #1976d2;
+        }
+    </style>
 </head>
 <body>
-    <h1>QR Data Decoder</h1>
-    <p id="decodedData">Loading...</p>
+    <div class="container">
+        <h1>QR Data Decoder</h1>
+        <p>Here is the decoded data from your QR code:</p>
+        <div id="decodedData" class="decoded-data">Loading...</div>
+    </div>
     <script>
         // Get the Base64 data from the URL query parameter
         const urlParams = new URLSearchParams(window.location.search);
@@ -15,14 +67,46 @@
         
         if (base64Data) {
             try {
-                // Decode the Base64 data
-                const decodedData = atob(base64Data);
-                document.getElementById('decodedData').innerText = decodedData;
+                // Decode the Base64 data and parse JSON
+                const decodedJson = JSON.parse(atob(base64Data));
+                document.getElementById('decodedData').innerHTML = renderJson(decodedJson);
             } catch (error) {
-                document.getElementById('decodedData').innerText = 'Invalid data.';
+                document.getElementById('decodedData').innerText = 'Invalid data format.';
             }
         } else {
             document.getElementById('decodedData').innerText = 'No data found.';
+        }
+
+        // Recursive function to render nested JSON
+        function renderJson(obj, indent = 0) {
+            const indentStr = '&nbsp;'.repeat(indent * 4); // Indentation using non-breaking spaces
+            let html = '';
+
+            if (Array.isArray(obj)) {
+                html += '[<br>';
+                obj.forEach((item, index) => {
+                    html += indentStr + renderJson(item, indent + 1);
+                    if (index < obj.length - 1) html += ',';
+                    html += '<br>';
+                });
+                html += indentStr + ']';
+            } else if (typeof obj === 'object' && obj !== null) {
+                html += '{<br>';
+                const keys = Object.keys(obj);
+                keys.forEach((key, index) => {
+                    html += indentStr + `<span class="json-key">"${key}"</span>: ` + renderJson(obj[key], indent + 1);
+                    if (index < keys.length - 1) html += ',';
+                    html += '<br>';
+                });
+                html += indentStr + '}';
+            } else if (typeof obj === 'string') {
+                html += `<span class="json-string">"${obj}"</span>`;
+            } else if (typeof obj === 'number') {
+                html += `<span class="json-number">${obj}</span>`;
+            } else {
+                html += String(obj);
+            }
+            return html;
         }
     </script>
 </body>
