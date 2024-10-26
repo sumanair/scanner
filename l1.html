@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Data Decoder</title>
+</head>
+<body>
+    <h1>QR Data Decoder</h1>
+    <p id="decodedData">Loading...</p>
+    <script>
+        // Get the Base64 data from the URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const base64Data = urlParams.get('data');
+        
+        if (base64Data) {
+            try {
+                // Decode the Base64 data
+                const decodedData = atob(base64Data);
+                document.getElementById('decodedData').innerText = decodedData;
+            } catch (error) {
+                document.getElementById('decodedData').innerText = 'Invalid data.';
+            }
+        } else {
+            document.getElementById('decodedData').innerText = 'No data found.';
+        }
+    </script>
+</body>
+</html>
