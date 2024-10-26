@@ -43,6 +43,19 @@
             white-space: pre-wrap;
             word-wrap: break-word;
         }
+        .no-data {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #999;
+        }
+        .no-data-icon {
+            font-size: 40px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
         .json-key {
             color: #d32f2f;
         }
@@ -58,23 +71,32 @@
     <div class="container">
         <h1>QR Data Decoder</h1>
         <p>Here is the decoded data from your QR code:</p>
-        <div id="decodedData" class="decoded-data">Loading...</div>
+        <div id="decodedData" class="decoded-data"></div>
     </div>
     <script>
         // Get the Base64 data from the URL query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const base64Data = urlParams.get('data');
         
+        const decodedDataElement = document.getElementById('decodedData');
+        
         if (base64Data) {
             try {
                 // Decode the Base64 data and parse JSON
                 const decodedJson = JSON.parse(atob(base64Data));
-                document.getElementById('decodedData').innerHTML = renderJson(decodedJson);
+                decodedDataElement.innerHTML = renderJson(decodedJson);
             } catch (error) {
-                document.getElementById('decodedData').innerText = 'Invalid data format.';
+                decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
             }
         } else {
-            document.getElementById('decodedData').innerText = 'No data found.';
+            // Display a styled "No Data" message
+            decodedDataElement.innerHTML = `
+                <div class="no-data">
+                    <div class="no-data-icon">🚫</div>
+                    <div>No data found.</div>
+                    <p>Expected data to be Base64-encoded JSON. Please scan a QR code with valid data.</p>
+                </div>
+            `;
         }
 
         // Recursive function to render nested JSON
