@@ -164,7 +164,7 @@
                 
                 // Separate main data and metadata
                 const mainData = decodedJson.data || {};
-                const metadata = decodedJson.__metadata || {};
+                const metadata = decodedJson.__metadata_from_qrmaker || {};
 
                 // Render the main data as a table
                 decodedDataElement.innerHTML = renderJsonAsTable(mainData);
