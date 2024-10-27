@@ -43,6 +43,18 @@
             background-color: #f4f4f4;
             color: #333;
         }
+        .metadata-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .metadata-title {
+            font-weight: bold;
+            color: #2e7d32;
+        }
         .json-section {
             margin-top: 20px;
             text-align: left;
@@ -70,7 +82,15 @@
 <body>
     <div class="container">
         <h1>QR Data Decoder</h1>
+
+        <!-- Rendered main data -->
         <div id="decodedData" class="decoded-data"></div>
+
+        <!-- Informational metadata section -->
+        <div id="metadataSection" class="metadata-section">
+            <div class="metadata-title">Informational Content from QR Code Creator:</div>
+            <div id="metadataContent"></div>
+        </div>
 
         <!-- Collapsible JSON section -->
         <div class="json-section">
@@ -103,6 +123,7 @@
         const base64Data = urlParams.get('data');
         
         const decodedDataElement = document.getElementById('decodedData');
+        const metadataSection = document.getElementById('metadataContent');
         const jsonToggle = document.getElementById('jsonToggle');
         const jsonContent = document.getElementById('jsonContent');
 
@@ -111,8 +132,15 @@
                 // Decode the Base64 data and parse JSON
                 const decodedJson = JSON.parse(atob(base64Data));
                 
-                // Render the JSON as a table
-                decodedDataElement.innerHTML = renderJsonAsTable(decodedJson);
+                // Separate main data and metadata
+                const mainData = decodedJson.data || {};
+                const metadata = decodedJson.__metadata || {};
+
+                // Render the main data as a table
+                decodedDataElement.innerHTML = renderJsonAsTable(mainData);
+
+                // Render the metadata as a nested table
+                metadataSection.innerHTML = renderJsonAsTable(metadata);
 
                 // Show the full JSON in collapsible section
                 jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
