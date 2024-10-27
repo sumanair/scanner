@@ -18,7 +18,7 @@
             text-align: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             padding: 20px;
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -28,108 +28,110 @@
             font-size: 24px;
             color: #4a90e2;
         }
-        p {
-            font-size: 16px;
-            color: #666;
-        }
-        .decoded-data {
+        .decoded-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
-            padding: 15px;
-            background-color: #f4f4f4;
-            border: 1px solid #ddd;
-            border-radius: 8px;
             text-align: left;
+            font-family: "Courier New", monospace;
+        }
+        .decoded-table th, .decoded-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        .decoded-table th {
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .json-section {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .json-toggle {
+            cursor: pointer;
+            color: #4a90e2;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .json-content {
+            display: none;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
             font-family: "Courier New", monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
-        }
-        .no-data {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: #999;
-            font-size: 18px;
-        }
-        .no-data-icon {
-            font-size: 50px;
-            color: #ccc;
-            margin-bottom: 10px;
-        }
-        .json-key {
-            color: #d32f2f;
-        }
-        .json-string {
-            color: #388e3c;
-        }
-        .json-number {
-            color: #1976d2;
+            color: #333;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>QR Data Decoder</h1>
-        <p>Here is the decoded data from your QR code:</p>
         <div id="decodedData" class="decoded-data"></div>
+
+        <!-- Collapsible JSON section -->
+        <div class="json-section">
+            <div id="jsonToggle" class="json-toggle">Show Raw JSON</div>
+            <div id="jsonContent" class="json-content"></div>
+        </div>
     </div>
+
     <script>
-        // Get the Base64 data from the URL query parameter
+        // Helper function to create a nested table for JSON data
+        function renderJsonAsTable(jsonData) {
+            let html = '<table class="decoded-table">';
+            Object.entries(jsonData).forEach(([key, value]) => {
+                html += '<tr><th>' + key + '</th><td>';
+
+                if (typeof value === 'object' && value !== null) {
+                    html += renderJsonAsTable(value); // Recursive call for nested objects
+                } else {
+                    html += value;
+                }
+
+                html += '</td></tr>';
+            });
+            html += '</table>';
+            return html;
+        }
+
+        // Get Base64 data from the URL query parameter
         const urlParams = new URLSearchParams(window.location.search);
         const base64Data = urlParams.get('data');
         
         const decodedDataElement = document.getElementById('decodedData');
-        
+        const jsonToggle = document.getElementById('jsonToggle');
+        const jsonContent = document.getElementById('jsonContent');
+
         if (base64Data) {
             try {
                 // Decode the Base64 data and parse JSON
                 const decodedJson = JSON.parse(atob(base64Data));
-                decodedDataElement.innerHTML = renderJson(decodedJson);
+                
+                // Render the JSON as a table
+                decodedDataElement.innerHTML = renderJsonAsTable(decodedJson);
+
+                // Show the full JSON in collapsible section
+                jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
+
+                // Toggle display of raw JSON content
+                jsonToggle.onclick = () => {
+                    if (jsonContent.style.display === "none") {
+                        jsonContent.style.display = "block";
+                        jsonToggle.innerText = "Hide Raw JSON";
+                    } else {
+                        jsonContent.style.display = "none";
+                        jsonToggle.innerText = "Show Raw JSON";
+                    }
+                };
             } catch (error) {
                 decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
             }
         } else {
-            // Display a styled "No Data" message
-            decodedDataElement.innerHTML = `
-                <div class="no-data">
-                    <div class="no-data-icon">🚫</div>
-                    <div>No data found.</div>
-                    <p>Expected data to be Base64-encoded JSON. Please scan a QR code with valid data.</p>
-                </div>
-            `;
-        }
-
-        // Recursive function to render nested JSON
-        function renderJson(obj, indent = 0) {
-            const indentStr = '&nbsp;'.repeat(indent * 4); // Indentation using non-breaking spaces
-            let html = '';
-
-            if (Array.isArray(obj)) {
-                html += '[<br>';
-                obj.forEach((item, index) => {
-                    html += indentStr + renderJson(item, indent + 1);
-                    if (index < obj.length - 1) html += ',';
-                    html += '<br>';
-                });
-                html += indentStr + ']';
-            } else if (typeof obj === 'object' && obj !== null) {
-                html += '{<br>';
-                const keys = Object.keys(obj);
-                keys.forEach((key, index) => {
-                    html += indentStr + `<span class="json-key">"${key}"</span>: ` + renderJson(obj[key], indent + 1);
-                    if (index < keys.length - 1) html += ',';
-                    html += '<br>';
-                });
-                html += indentStr + '}';
-            } else if (typeof obj === 'string') {
-                html += `<span class="json-string">"${obj}"</span>`;
-            } else if (typeof obj === 'number') {
-                html += `<span class="json-number">${obj}</span>`;
-            } else {
-                html += String(obj);
-            }
-            return html;
+            decodedDataElement.innerText = 'No data found. Please scan a QR code with valid data.';
         }
     </script>
 </body>
