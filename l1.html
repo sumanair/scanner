@@ -18,7 +18,7 @@
             text-align: center;
         }
         .container {
-            max-width: 800px;
+            max-width: 1000px; /* Expanded container */
             padding: 20px;
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -62,6 +62,7 @@
         .metadata-title {
             font-weight: bold;
             color: #2e7d32;
+            margin-bottom: 10px;
         }
         .json-section {
             margin-top: 20px;
@@ -108,14 +109,23 @@
     </div>
 
     <script>
-        // Helper function to create a nested table for JSON data
+        // Helper function to render JSON as a table with flattening of single-child nesting
         function renderJsonAsTable(jsonData, level = 0) {
             let html = '<table class="decoded-table" style="margin-left: ' + (level * 10) + 'px;">';
+            
             Object.entries(jsonData).forEach(([key, value]) => {
+                // Check if value is an object with only one key-value pair for flattening
+                while (typeof value === 'object' && value !== null && Object.keys(value).length === 1) {
+                    const nextKey = Object.keys(value)[0];
+                    key += ' > ' + nextKey; // Combine keys to flatten nesting
+                    value = value[nextKey];
+                }
+
                 html += '<tr><th>' + key + '</th><td>';
 
+                // Recursively render nested objects
                 if (typeof value === 'object' && value !== null) {
-                    html += renderJsonAsTable(value, level + 1); // Recursive call for nested objects
+                    html += renderJsonAsTable(value, level + 1);
                 } else {
                     html += value;
                 }
