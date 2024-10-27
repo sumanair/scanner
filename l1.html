@@ -18,7 +18,7 @@
             text-align: center;
         }
         .container {
-            max-width: 1000px; /* Expanded container */
+            max-width: 90%; /* Adjusted for better mobile responsiveness */
             padding: 20px;
             background-color: #fff;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -35,7 +35,7 @@
             text-align: left;
             font-family: "Courier New", monospace;
             word-wrap: break-word;
-            table-layout: fixed;
+            table-layout: auto; /* Allow dynamic sizing */
         }
         .decoded-table th, .decoded-table td {
             border: 1px solid #ddd;
@@ -47,6 +47,8 @@
             background-color: #f9f9f9;
             color: #333;
             font-weight: bold;
+            width: 1%; /* Force minimum width for the key column */
+            white-space: nowrap; /* Prevent keys from expanding the column */
         }
         .decoded-table tr:nth-child(odd) {
             background-color: #f5f5f5;
@@ -85,6 +87,16 @@
             word-wrap: break-word;
             color: #333;
             margin-top: 5px;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .container {
+                width: 100%;
+                padding: 10px;
+            }
+            .decoded-table th, .decoded-table td {
+                padding: 6px;
+            }
         }
     </style>
 </head>
@@ -152,7 +164,7 @@
                 
                 // Separate main data and metadata
                 const mainData = decodedJson.data || {};
-                const metadata = decodedJson.__metadata_from_qrmaker || {};
+                const metadata = decodedJson.__metadata || {};
 
                 // Render the main data as a table
                 decodedDataElement.innerHTML = renderJsonAsTable(mainData);
@@ -165,13 +177,8 @@
 
                 // Toggle display of raw JSON content
                 jsonToggle.onclick = () => {
-                    if (jsonContent.style.display === "none") {
-                        jsonContent.style.display = "block";
-                        jsonToggle.innerText = "Hide Raw JSON";
-                    } else {
-                        jsonContent.style.display = "none";
-                        jsonToggle.innerText = "Show Raw JSON";
-                    }
+                    jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
+                    jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
                 };
             } catch (error) {
                 decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
