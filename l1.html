@@ -1,68 +1,55 @@
-<script>
-    function renderJsonAsTable(jsonData) {
-        let html = '<table class="decoded-table">';
-        Object.entries(jsonData).forEach(([key, value]) => {
-            html += '<tr><th>' + key + '</th><td>';
-            if (typeof value === 'object' && value !== null) {
-                html += renderJsonAsTable(value);
-            } else {
-                html += value;
-            }
-            html += '</td></tr>';
-        });
-        html += '</table>';
-        return html;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Data Decoder</title>
+    <style>
+        /* Add your CSS styles here */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Data Decoder</h1>
+        <div id="decodedData"></div>
+        <div id="metadataContent"></div>
+        <div id="jsonToggle" class="json-toggle">Show Raw JSON</div>
+        <div id="jsonContent" class="json-content"></div>
+    </div>
 
-    // Helper: Fix Base64 URL encoding
-    function fixBase64(base64) {
-        return base64.replace(/-/g, '+').replace(/_/g, '/');
-    }
-
-    // Get Base64 data from the URL query parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    let base64Data = urlParams.get('data');
-
-    const decodedDataElement = document.getElementById('decodedData');
-    const metadataSection = document.getElementById('metadataContent');
-    const jsonToggle = document.getElementById('jsonToggle');
-    const jsonContent = document.getElementById('jsonContent');
-
-    if (base64Data) {
-        try {
-            // Fix Base64 URL encoding if needed
-            base64Data = fixBase64(base64Data);
-
-            // Decode the Base64 data and parse JSON
-            const decodedString = decodeURIComponent(atob(base64Data));
-            console.log("Decoded Base64 String:", decodedString);
-
-            const decodedJson = JSON.parse(decodedString);
-            console.log("Parsed JSON:", decodedJson);
-
-            // Separate main data and metadata
-            const mainData = decodedJson.data || decodedJson;
-            const metadata = decodedJson.metadata_from_qrmaker || {};
-
-            // Render the main data as a table
-            decodedDataElement.innerHTML = renderJsonAsTable(mainData);
-
-            // Render the metadata as a nested table
-            metadataSection.innerHTML = renderJsonAsTable(metadata);
-
-            // Show the full JSON in collapsible section
-            jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
-
-            // Toggle display of raw JSON content
-            jsonToggle.onclick = () => {
-                jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
-                jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
-            };
-        } catch (error) {
-            console.error("Error decoding Base64 or parsing JSON:", error);
-            decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
+    <script>
+        // Your JavaScript code
+        function renderJsonAsTable(jsonData) {
+            let html = '<table>';
+            Object.entries(jsonData).forEach(([key, value]) => {
+                html += `<tr><th>${key}</th><td>${typeof value === 'object' ? renderJsonAsTable(value) : value}</td></tr>`;
+            });
+            html += '</table>';
+            return html;
         }
-    } else {
-        decodedDataElement.innerText = 'No data found. Please scan a QR code with valid data.';
-    }
-</script>
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let base64Data = urlParams.get('data');
+
+        if (base64Data) {
+            try {
+                base64Data = base64Data.replace(/-/g, '+').replace(/_/g, '/');
+                const decodedString = decodeURIComponent(atob(base64Data));
+                const decodedJson = JSON.parse(decodedString);
+
+                document.getElementById('decodedData').innerHTML = renderJsonAsTable(decodedJson.data || decodedJson);
+                document.getElementById('jsonContent').innerText = JSON.stringify(decodedJson, null, 2);
+
+                document.getElementById('jsonToggle').addEventListener('click', () => {
+                    const jsonContent = document.getElementById('jsonContent');
+                    jsonContent.style.display = jsonContent.style.display === 'none' ? 'block' : 'none';
+                });
+            } catch (error) {
+                console.error("Error decoding Base64 or parsing JSON:", error);
+            }
+        } else {
+            document.getElementById('decodedData').innerText = 'No data found.';
+        }
+    </script>
+</body>
+</html>
