@@ -1,40 +1,181 @@
-// Get Base64 data from the URL query parameter
-const urlParams = new URLSearchParams(window.location.search);
-const base64Data = urlParams.get('data');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Data Decoder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .container {
+            max-width: 90%;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #4a90e2;
+        }
+        .decoded-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            text-align: left;
+            font-family: "Courier New", monospace;
+            word-wrap: break-word;
+            table-layout: auto;
+        }
+        .decoded-table th, .decoded-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            vertical-align: top;
+            overflow-wrap: break-word;
+        }
+        .decoded-table th {
+            background-color: #f9f9f9;
+            color: #333;
+            font-weight: bold;
+            width: 1%;
+            white-space: nowrap;
+        }
+        .decoded-table tr:nth-child(odd) {
+            background-color: #f5f5f5;
+        }
+        .metadata-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border: 1px solid #a5d6a7;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .metadata-title {
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+        .json-section {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .json-toggle {
+            cursor: pointer;
+            color: #4a90e2;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .json-content {
+            display: none;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: "Courier New", monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #333;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Data Decoder</h1>
 
-const decodedDataElement = document.getElementById('decodedData');
-const metadataSection = document.getElementById('metadataContent');
-const jsonToggle = document.getElementById('jsonToggle');
-const jsonContent = document.getElementById('jsonContent');
+        <!-- Rendered main data -->
+        <div id="decodedData" class="decoded-data"></div>
 
-if (base64Data) {
-    try {
-        // Decode the Base64 data and parse JSON
-        const decodedString = decodeURIComponent(atob(base64Data));
-        const decodedJson = JSON.parse(decodedString);
+        <!-- Informational metadata section -->
+        <div id="metadataSection" class="metadata-section">
+            <div class="metadata-title">Informational Content from QR Code Creator:</div>
+            <div id="metadataContent"></div>
+        </div>
 
-        // Separate main data and metadata
-        const mainData = decodedJson.data || decodedJson; // Assuming 'data' is the main key
-        const metadata = decodedJson.metadata_from_qrmaker || {};
+        <!-- Collapsible JSON section -->
+        <div class="json-section">
+            <div id="jsonToggle" class="json-toggle">Show Raw JSON</div>
+            <div id="jsonContent" class="json-content"></div>
+        </div>
+    </div>
 
-        // Render the main data as a table
-        decodedDataElement.innerHTML = renderJsonAsTable(mainData);
+    <script>
+        // Helper function to render JSON as a table
+        function renderJsonAsTable(jsonData, level = 0) {
+            if (!jsonData || typeof jsonData !== 'object') {
+                return '<p>No data available to render.</p>';
+            }
 
-        // Render the metadata as a nested table
-        metadataSection.innerHTML = renderJsonAsTable(metadata);
+            let html = '<table class="decoded-table" style="margin-left: ' + (level * 10) + 'px;">';
 
-        // Show the full JSON in collapsible section
-        jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
+            Object.entries(jsonData).forEach(([key, value]) => {
+                html += '<tr><th>' + key + '</th><td>';
+                if (typeof value === 'object' && value !== null) {
+                    html += renderJsonAsTable(value, level + 1);
+                } else {
+                    html += value;
+                }
+                html += '</td></tr>';
+            });
 
-        // Toggle display of raw JSON content
-        jsonToggle.onclick = () => {
-            jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
-            jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
-        };
-    } catch (error) {
-        console.error("Error decoding Base64 or parsing JSON:", error);
-        decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
-    }
-} else {
-    decodedDataElement.innerText = 'No data found. Please scan a QR code with valid data.';
-}
+            html += '</table>';
+            return html;
+        }
+
+        // Get Base64 data from the URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const base64Data = urlParams.get('data');
+
+        const decodedDataElement = document.getElementById('decodedData');
+        const metadataSection = document.getElementById('metadataContent');
+        const jsonToggle = document.getElementById('jsonToggle');
+        const jsonContent = document.getElementById('jsonContent');
+
+        if (base64Data) {
+            try {
+                console.log("Base64 Data:", base64Data); // Log the Base64 data
+                const decodedJson = JSON.parse(atob(base64Data));
+                console.log("Decoded JSON:", decodedJson); // Log the decoded JSON
+
+                const mainData = decodedJson.data || {};
+                const metadata = decodedJson.metadata_from_qrmaker || {};
+
+                console.log("Main Data:", mainData); // Log the main data
+                console.log("Metadata:", metadata); // Log the metadata
+
+                // Render the main data as a table
+                decodedDataElement.innerHTML = renderJsonAsTable(decodedJson);
+
+                // Render metadata
+                metadataSection.innerHTML = renderJsonAsTable(metadata);
+
+                // Show raw JSON
+                jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
+
+                // Toggle raw JSON visibility
+                jsonToggle.onclick = () => {
+                    jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
+                    jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
+                };
+            } catch (error) {
+                console.error("Error decoding Base64 data:", error);
+                decodedDataElement.innerText = "Invalid data format. Expected Base64-encoded JSON.";
+            }
+        } else {
+            console.warn("No Base64 data found in the URL.");
+            decodedDataElement.innerText = "No data found. Please scan a QR code with valid data.";
+        }
+    </script>
+</body>
+</html>
