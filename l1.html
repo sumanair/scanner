@@ -47,11 +47,6 @@
             background-color: #f9f9f9;
             color: #333;
             font-weight: bold;
-            width: 1%;
-            white-space: nowrap;
-        }
-        .decoded-table tr:nth-child(odd) {
-            background-color: #f5f5f5;
         }
         .metadata-section {
             margin-top: 20px;
@@ -74,7 +69,6 @@
             cursor: pointer;
             color: #4a90e2;
             font-weight: bold;
-            margin-top: 10px;
         }
         .json-content {
             display: none;
@@ -85,8 +79,6 @@
             font-family: "Courier New", monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
-            color: #333;
-            margin-top: 5px;
         }
     </style>
 </head>
@@ -111,24 +103,17 @@
     </div>
 
     <script>
-        // Helper function to render JSON as a table
-        function renderJsonAsTable(jsonData, level = 0) {
-            if (!jsonData || typeof jsonData !== 'object') {
-                return '<p>No data available to render.</p>';
-            }
-
-            let html = '<table class="decoded-table" style="margin-left: ' + (level * 10) + 'px;">';
-
+        function renderJsonAsTable(jsonData) {
+            let html = '<table class="decoded-table">';
             Object.entries(jsonData).forEach(([key, value]) => {
                 html += '<tr><th>' + key + '</th><td>';
                 if (typeof value === 'object' && value !== null) {
-                    html += renderJsonAsTable(value, level + 1);
+                    html += renderJsonAsTable(value);
                 } else {
                     html += value;
                 }
                 html += '</td></tr>';
             });
-
             html += '</table>';
             return html;
         }
@@ -144,37 +129,37 @@
 
         if (base64Data) {
             try {
-                console.log("Base64 Data:", base64Data); // Log the Base64 data
-                const decodedJson = JSON.parse(atob(base64Data));
-                console.log("Decoded JSON:", decodedJson); // Log the decoded JSON
+                // Decode the Base64 data and parse JSON
+                const decodedString = decodeURIComponent(atob(base64Data));
+                console.log("Decoded Base64 String:", decodedString);
 
-                const mainData = decodedJson.data || {};
+                const decodedJson = JSON.parse(decodedString);
+                console.log("Parsed JSON:", decodedJson);
+
+                // Separate main data and metadata
+                const mainData = decodedJson.data || decodedJson;
                 const metadata = decodedJson.metadata_from_qrmaker || {};
 
-                console.log("Main Data:", mainData); // Log the main data
-                console.log("Metadata:", metadata); // Log the metadata
-
                 // Render the main data as a table
-                decodedDataElement.innerHTML = renderJsonAsTable(decodedJson);
+                decodedDataElement.innerHTML = renderJsonAsTable(mainData);
 
-                // Render metadata
+                // Render the metadata as a nested table
                 metadataSection.innerHTML = renderJsonAsTable(metadata);
 
-                // Show raw JSON
+                // Show the full JSON in collapsible section
                 jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
 
-                // Toggle raw JSON visibility
+                // Toggle display of raw JSON content
                 jsonToggle.onclick = () => {
                     jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
                     jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
                 };
             } catch (error) {
-                console.error("Error decoding Base64 data:", error);
-                decodedDataElement.innerText = "Invalid data format. Expected Base64-encoded JSON.";
+                console.error("Error decoding Base64 or parsing JSON:", error);
+                decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
             }
         } else {
-            console.warn("No Base64 data found in the URL.");
-            decodedDataElement.innerText = "No data found. Please scan a QR code with valid data.";
+            decodedDataElement.innerText = 'No data found. Please scan a QR code with valid data.';
         }
     </script>
 </body>
