@@ -69,6 +69,7 @@
             cursor: pointer;
             color: #4a90e2;
             font-weight: bold;
+            margin-top: 10px;
         }
         .json-content {
             display: none;
@@ -103,12 +104,13 @@
     </div>
 
     <script>
+        // Function to render JSON data as an HTML table
         function renderJsonAsTable(jsonData) {
             let html = '<table class="decoded-table">';
             Object.entries(jsonData).forEach(([key, value]) => {
                 html += '<tr><th>' + key + '</th><td>';
                 if (typeof value === 'object' && value !== null) {
-                    html += renderJsonAsTable(value);
+                    html += renderJsonAsTable(value); // Recursively render nested objects
                 } else {
                     html += value;
                 }
@@ -122,6 +124,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const base64Data = urlParams.get('data');
 
+        // Select elements
         const decodedDataElement = document.getElementById('decodedData');
         const metadataSection = document.getElementById('metadataContent');
         const jsonToggle = document.getElementById('jsonToggle');
@@ -150,10 +153,14 @@
                 jsonContent.innerText = JSON.stringify(decodedJson, null, 2);
 
                 // Toggle display of raw JSON content
-                jsonToggle.onclick = () => {
-                    jsonContent.style.display = jsonContent.style.display === "none" ? "block" : "none";
-                    jsonToggle.innerText = jsonContent.style.display === "none" ? "Show Raw JSON" : "Hide Raw JSON";
-                };
+                jsonToggle.addEventListener('click', () => {
+                    const isHidden = jsonContent.style.display === "none";
+                    jsonContent.style.display = isHidden ? "block" : "none";
+                    jsonToggle.innerText = isHidden ? "Hide Raw JSON" : "Show Raw JSON";
+                });
+
+                // Ensure JSON content is hidden initially
+                jsonContent.style.display = "none";
             } catch (error) {
                 console.error("Error decoding Base64 or parsing JSON:", error);
                 decodedDataElement.innerText = 'Invalid data format. Expected Base64-encoded JSON.';
