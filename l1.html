@@ -140,8 +140,17 @@
                 console.log("Parsed JSON:", decodedJson);
 
                 // Separate main data and metadata
-                const mainData = decodedJson.data || decodedJson;
-                const metadata = decodedJson.metadata_from_qrmaker || {};
+                let mainData = {};
+                let metadata = {};
+                
+                if ('data' in decodedJson || 'metadata_from_qrmaker' in decodedJson) {
+                    mainData = decodedJson.data || {};
+                    metadata = decodedJson.metadata_from_qrmaker || {};
+                } else {
+                    mainData = decodedJson;
+                    metadata = {};
+                    document.getElementById('metadataSection').style.display = 'none';
+                }
 
                 // Render the main data as a table
                 decodedDataElement.innerHTML = renderJsonAsTable(mainData);
