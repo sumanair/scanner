@@ -4,160 +4,110 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Organizer Check-In</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f9;
-      padding: 16px;
-    }
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background-color: white;
-      border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      background: #f5f5f5;
     }
-    h2 {
-      color: #4a90e2;
-      text-align: center;
+    h1 {
+      color: #333;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    #result {
+      background: #e0ffe0;
+      padding: 10px;
+      margin-top: 20px;
+      word-break: break-word;
     }
     label {
-      font-weight: bold;
       display: block;
       margin-top: 10px;
     }
-    input, select, button {
+    input, select {
       width: 100%;
-      margin-top: 5px;
-      padding: 8px;
-      font-size: 1em;
-    }
-    #qr-reader {
-      margin-top: 20px;
-    }
-    #json-preview {
-      background: #f0f0f0;
-      padding: 10px;
-      margin-top: 15px;
-      white-space: pre-wrap;
-      font-family: monospace;
-      border-radius: 5px;
-      display: none;
-    }
-    #status {
-      margin-top: 10px;
-      font-weight: bold;
-      color: green;
+      padding: 6px;
+      margin-top: 4px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>📸 Organizer QR Check-In</h2>
+  <h1>Organizer Check-In</h1>
 
-    <label for="authCode">🔐 Organizer Auth Code:</label>
-    <input type="password" id="authCode" placeholder="Enter secret code" required />
+  <label for="authCode">Enter Organizer Code:</label>
+  <input type="password" id="authCode" placeholder="e.g., secret123" />
 
-    <div id="qr-reader" style="width: 100%; height: 300px;"></div>
+  <button id="startScan">Start QR Scan</button>
 
-    <div id="json-preview"></div>
+  <div id="reader" style="display:none;"></div>
 
-    <label for="headcount">👥 How many are checking in?</label>
-    <select id="headcount" disabled>
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-      <option value="7">7</option>
-      <option value="8">8</option>
-      <option value="9">9</option>
-      <option value="10">10</option>
-    </select>
+  <label for="guestCount" style="display:none;">Guests in this group:</label>
+  <select id="guestCount" style="display:none;">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
 
-    <button id="submitBtn" disabled>✅ Confirm Check-In</button>
-    <div id="status"></div>
-  </div>
+  <button id="submitBtn" style="display:none;">Confirm Check-In</button>
 
+  <div id="result"></div>
+
+  <script src="html5-qrcode.min.js"></script>
   <script>
-    let lastDecodedData = null;
+    const readerEl = document.getElementById("reader");
+    const resultEl = document.getElementById("result");
+    const guestCountEl = document.getElementById("guestCount");
+    const submitBtn = document.getElementById("submitBtn");
+    const authCodeInput = document.getElementById("authCode");
 
-    function onScanSuccess(decodedText) {
-      try {
-        const url = new URL(decodedText);
-        const base64 = url.searchParams.get("data");
-        if (!base64) throw new Error("Missing 'data' param in URL");
+    let scannedData = null;
 
-        const jsonStr = decodeURIComponent(atob(base64));
-        const data = JSON.parse(jsonStr);
-
-        lastDecodedData = data;
-        document.getElementById("json-preview").innerText = JSON.stringify(data, null, 2);
-        document.getElementById("json-preview").style.display = "block";
-
-        document.getElementById("headcount").disabled = false;
-        document.getElementById("submitBtn").disabled = false;
-        document.getElementById("status").innerText = "QR scanned successfully!";
-      } catch (err) {
-        document.getElementById("status").innerText = "❌ Invalid QR content.";
-        console.error(err);
-      }
-    }
-
-    function onScanFailure(error) {
-      // Do nothing on failure to keep UI smooth
-    }
-
-    const html5QrCode = new Html5Qrcode("qr-reader");
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 250 },
-          onScanSuccess,
-          onScanFailure
-        );
-      }
-    });
-
-    document.getElementById("submitBtn").addEventListener("click", () => {
-      const authCode = document.getElementById("authCode").value.trim();
-      const headcount = parseInt(document.getElementById("headcount").value, 10);
-
-      if (!authCode) {
-        alert("Please enter the organizer code.");
+    document.getElementById("startScan").addEventListener("click", () => {
+      const code = authCodeInput.value.trim();
+      if (code !== "secret123") {
+        alert("❌ Invalid Organizer Code");
         return;
       }
 
-      if (!lastDecodedData) {
+      readerEl.style.display = "block";
+      guestCountEl.style.display = "block";
+      submitBtn.style.display = "inline-block";
+
+      const qr = new Html5Qrcode("reader");
+      qr.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: 250,
+        },
+        (decodedText) => {
+          qr.stop();
+          scannedData = decodedText;
+          resultEl.innerText = `✅ Scanned: ${decodedText}`;
+        },
+        (errorMsg) => {
+          // console.warn(`Scan error: ${errorMsg}`);
+        }
+      ).catch((err) => {
+        console.error("Camera start error:", err);
+        resultEl.innerText = "❌ Camera not available or permission denied.";
+      });
+    });
+
+    submitBtn.addEventListener("click", () => {
+      if (!scannedData) {
         alert("Please scan a QR code first.");
         return;
       }
-
-      // TODO: Send to backend here. Example:
-      /*
-      fetch("/checkin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          authCode,
-          headcount,
-          qrData: lastDecodedData
-        })
-      }).then(...)
-      */
-
-      console.log("✅ Check-in data:", {
-        authCode,
-        headcount,
-        qrData: lastDecodedData
-      });
-
-      document.getElementById("status").innerText = "✅ Check-in submitted (not yet saved).";
-      document.getElementById("submitBtn").disabled = true;
+      const guestCount = guestCountEl.value;
+      alert(`Submitted check-in for ${guestCount} guest(s)\nData: ${scannedData}`);
+      // TODO: Implement DB backend API call here
     });
   </script>
 </body>
