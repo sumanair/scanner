@@ -3,111 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Organizer Check-In</title>
+  <title>Organizer QR Check-In</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f0f0f0;
       padding: 20px;
-      background: #f5f5f5;
+      text-align: center;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     h1 {
-      color: #333;
-    }
-    #reader {
-      width: 100%;
-      max-width: 400px;
-      margin: 20px auto;
-    }
-    #result {
-      background: #e0ffe0;
-      padding: 10px;
-      margin-top: 20px;
-      word-break: break-word;
+      font-size: 22px;
+      color: #0066cc;
     }
     label {
       display: block;
-      margin-top: 10px;
+      margin: 10px 0 4px;
+      font-weight: bold;
     }
-    input, select {
+    input, select, button {
       width: 100%;
-      padding: 6px;
-      margin-top: 4px;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #reader {
+      width: 100%;
+      margin-top: 20px;
+      display: none;
+    }
+    #result {
+      background: #e6ffe6;
+      padding: 10px;
+      border: 1px solid #aaf;
+      word-break: break-word;
+      border-radius: 6px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Organizer Check-In</h1>
+  <div class="container">
+    <h1>📸 Organizer QR Check-In</h1>
 
-  <label for="authCode">Enter Organizer Code:</label>
-  <input type="password" id="authCode" placeholder="e.g., secret123" />
+    <label for="authCode">🔐 Organizer Auth Code:</label>
+    <input type="password" id="authCode" placeholder="Enter code..." />
 
-  <button id="startScan">Start QR Scan</button>
+    <button id="startBtn">Start Scanning</button>
 
-  <div id="reader" style="display:none;"></div>
+    <div id="reader"></div>
+    <div id="result"></div>
 
-  <label for="guestCount" style="display:none;">Guests in this group:</label>
-  <select id="guestCount" style="display:none;">
-    <option value="1">1</option>
-    <option value="2">2</option>
-    <option value="3">3</option>
-    <option value="4">4</option>
-    <option value="5">5</option>
-  </select>
+    <label for="guestCount" style="display:none;">👥 How many are checking in?</label>
+    <select id="guestCount" style="display:none;">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
 
-  <button id="submitBtn" style="display:none;">Confirm Check-In</button>
-
-  <div id="result"></div>
+    <button id="confirmBtn" style="display:none;">✅ Confirm Check-In</button>
+  </div>
 
   <script src="html5-qrcode.min.js"></script>
   <script>
+    const startBtn = document.getElementById("startBtn");
+    const authInput = document.getElementById("authCode");
     const readerEl = document.getElementById("reader");
-    const resultEl = document.getElementById("result");
     const guestCountEl = document.getElementById("guestCount");
-    const submitBtn = document.getElementById("submitBtn");
-    const authCodeInput = document.getElementById("authCode");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const resultEl = document.getElementById("result");
+    let scannedData = "";
 
-    let scannedData = null;
-
-    document.getElementById("startScan").addEventListener("click", () => {
-      const code = authCodeInput.value.trim();
-      if (code !== "secret123") {
-        alert("❌ Invalid Organizer Code");
+    startBtn.addEventListener("click", () => {
+      const authCode = authInput.value.trim();
+      if (authCode !== "secret123") {
+        alert("Invalid organizer code.");
         return;
       }
 
       readerEl.style.display = "block";
-      guestCountEl.style.display = "block";
-      submitBtn.style.display = "inline-block";
 
-      const qr = new Html5Qrcode("reader");
-      qr.start(
+      const qrScanner = new Html5Qrcode("reader");
+      qrScanner.start(
         { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: 250,
-        },
+        { fps: 10, qrbox: 250 },
         (decodedText) => {
-          qr.stop();
+          qrScanner.stop();
           scannedData = decodedText;
-          resultEl.innerText = `✅ Scanned: ${decodedText}`;
+          resultEl.innerText = `✅ Scanned Data: ${decodedText}`;
+          guestCountEl.style.display = "block";
+          confirmBtn.style.display = "block";
         },
-        (errorMsg) => {
-          // console.warn(`Scan error: ${errorMsg}`);
+        (err) => {
+          // Ignore errors while scanning
         }
       ).catch((err) => {
-        console.error("Camera start error:", err);
-        resultEl.innerText = "❌ Camera not available or permission denied.";
+        resultEl.innerText = "❌ Could not access camera.";
+        console.error(err);
       });
     });
 
-    submitBtn.addEventListener("click", () => {
-      if (!scannedData) {
-        alert("Please scan a QR code first.");
-        return;
-      }
-      const guestCount = guestCountEl.value;
-      alert(`Submitted check-in for ${guestCount} guest(s)\nData: ${scannedData}`);
-      // TODO: Implement DB backend API call here
+    confirmBtn.addEventListener("click", () => {
+      const guests = guestCountEl.value;
+      alert(`✅ Checked in ${guests} guest(s)\n\nData: ${scannedData}`);
+      // TODO: Send to backend later
     });
   </script>
 </body>
