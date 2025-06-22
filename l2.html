@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QR Data Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+    .container {
+      max-width: 90%;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+    h1 {
+      font-size: 24px;
+      color: #4a90e2;
+    }
+    .decoded-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      text-align: left;
+      font-family: "Courier New", monospace;
+      table-layout: auto;
+      word-wrap: break-word;
+    }
+    .decoded-table th, .decoded-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      vertical-align: top;
+      overflow-wrap: break-word;
+    }
+    .decoded-table th {
+      background-color: #f9f9f9;
+      font-weight: bold;
+    }
+    .metadata-section {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #e9f7ef;
+      border: 1px solid #a5d6a7;
+      border-radius: 8px;
+      text-align: left;
+    }
+    .metadata-title {
+      font-weight: bold;
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+    .json-section {
+      margin-top: 20px;
+      text-align: left;
+    }
+    .json-toggle {
+      cursor: pointer;
+      color: #4a90e2;
+      font-weight: bold;
+    }
+    .json-content {
+      display: none;
+      background-color: #f4f4f4;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: "Courier New", monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR Data Viewer</h1>
+    <div id="decodedData" class="decoded-data"></div>
+
+    <div id="metadataSection" class="metadata-section">
+      <div class="metadata-title">Informational Content from QR Code Creator:</div>
+      <div id="metadataContent"></div>
+    </div>
+
+    <div class="json-section">
+      <div id="jsonToggle" class="json-toggle">Show Raw JSON</div>
+      <div id="jsonContent" class="json-content"></div>
+    </div>
+  </div>
+
+  <script>
+    function renderJsonAsTable(jsonData) {
+      let html = '<table class="decoded-table">';
+      for (const [key, value] of Object.entries(jsonData)) {
+        html += '<tr><th>' + key + '</th><td>';
+        if (typeof value === 'object' && value !== null) {
+          html += renderJsonAsTable(value);
+        } else {
+          html += value;
+        }
+        html += '</td></tr>';
+      }
+      html += '</table>';
+      return html;
+    }
+
+    function hexToUtf8(hex) {
+      const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+      return new TextDecoder().decode(bytes);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const hexData = urlParams.get('data');
+
+    const decodedDataElement = document.getElementById('decodedData');
+    const metadataSection = document.getElementById('metadataSection');
+    const metadataContent = document.getElementById('metadataContent');
+    const jsonToggle = document.getElementById('jsonToggle');
+    const jsonContent = document.getElementById('jsonContent');
+
+    if (hexData) {
+      try {
+        const jsonStr = hexToUtf8(decodeURIComponent(hexData));
+        const jsonObj = JSON.parse(jsonStr);
+
+        const main = jsonObj.data || {};
+        const meta = jsonObj.metadata_from_qrmaker || {};
+
+        decodedDataElement.innerHTML = renderJsonAsTable(main);
+        metadataContent.innerHTML = renderJsonAsTable(meta);
+        jsonContent.innerText = JSON.stringify(jsonObj, null, 2);
+
+        jsonToggle.onclick = () => {
+          const hidden = jsonContent.style.display === 'none';
+          jsonContent.style.display = hidden ? 'block' : 'none';
+          jsonToggle.innerText = hidden ? 'Hide Raw JSON' : 'Show Raw JSON';
+        };
+      } catch (e) {
+        console.error(e);
+        decodedDataElement.innerText = "Error parsing hex-encoded data.";
+      }
+    } else {
+      decodedDataElement.innerText = "No 'data' parameter found in URL.";
+      metadataSection.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
