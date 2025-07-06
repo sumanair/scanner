@@ -147,33 +147,42 @@
       html += '</table>';
       return html;
     }
-
+  
     function hexToUtf8(hex) {
       const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
       return new TextDecoder().decode(bytes);
     }
-
+  
     const urlParams = new URLSearchParams(window.location.search);
     const hexData = urlParams.get('data');
-
+  
     const decodedDataElement = document.getElementById('decodedData');
     const metadataSection = document.getElementById('metadataSection');
     const metadataContent = document.getElementById('metadataContent');
     const jsonToggle = document.getElementById('jsonToggle');
     const jsonContent = document.getElementById('jsonContent');
-
+  
     if (hexData) {
       try {
         const jsonStr = hexToUtf8(decodeURIComponent(hexData));
         const jsonObj = JSON.parse(jsonStr);
-
+  
         const main = jsonObj.data || {};
         const meta = jsonObj.metadata_from_qrmaker || {};
-
+  
+        // 🟡 Dynamically update page title and header
+        const eventName = main.event || "QR Data Viewer";
+        const fullTitle = `NSS NT ${eventName} Reservation Confirmation`;
+  
+        document.title = fullTitle;
+        document.querySelector('h1').innerText = fullTitle;
+  
+        // 🟡 Render content
         decodedDataElement.innerHTML = renderJsonAsTable(main);
         metadataContent.innerHTML = renderJsonAsTable(meta);
         jsonContent.innerText = JSON.stringify(jsonObj, null, 2);
-
+  
+        // 🟡 Toggle Raw JSON
         jsonToggle.onclick = () => {
           const isHidden = jsonContent.style.display === 'none';
           jsonContent.style.display = isHidden ? 'block' : 'none';
@@ -188,5 +197,6 @@
       metadataSection.style.display = 'none';
     }
   </script>
+  
 </body>
 </html>
