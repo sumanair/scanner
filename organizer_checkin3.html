@@ -24,7 +24,7 @@
       color: #0074D9;
       margin-bottom: 20px;
     }
-    input, select, button {
+    input, button {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -41,9 +41,10 @@
     button:disabled {
       background-color: #ccc;
     }
-    #reader {
+    #video {
       margin-top: 20px;
       width: 100%;
+      border-radius: 8px;
       display: none;
     }
     #result {
@@ -63,68 +64,47 @@
 
     <button id="startBtn">Start Scanning</button>
 
-    <div id="reader"></div>
+    <video id="video" muted autoplay playsinline></video>
     <div id="result"></div>
   </div>
 
-  <!-- QR Code Scanner Library -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <!-- QR Scanner Library (ESM CDN) -->
+  <script type="module">
+    import QrScanner from 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js';
 
-  <script>
-    const startBtn = document.getElementById("startBtn");
-    const reader = document.getElementById("reader");
-    const result = document.getElementById("result");
-  
-    async function startScanner() {
-      const authCode = document.getElementById("authCode").value;
-  
-      if (authCode !== "secret123") {
+    const startBtn = document.getElementById('startBtn');
+    const authInput = document.getElementById('authCode');
+    const videoElem = document.getElementById('video');
+    const resultElem = document.getElementById('result');
+
+    let scanner;
+
+    startBtn.addEventListener('click', async () => {
+      const authCode = authInput.value.trim();
+      if (authCode !== '123') {
         alert("❌ Invalid organizer code.");
         return;
       }
-  
+
+      startBtn.disabled = true;
+      videoElem.style.display = 'block';
+
       try {
-        // 🔒 Explicitly ask for permission first
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop());
-  
-        startBtn.disabled = true;
-        reader.style.display = "block";
-  
-        const qrScanner = new Html5Qrcode("reader");
-  
-        await qrScanner.start(
-          { facingMode: { exact: "environment" } },
-          { fps: 10, qrbox: 250 },
-          (decodedText, decodedResult) => {
-            console.log("✅ Scanned:", decodedText);
-            result.innerHTML = `<strong>✅ Check-In:</strong><br>${decodedText}`;
-            qrScanner.stop().then(() => {
-              reader.innerHTML = ""; // clean up camera stream
-            });
-          },
-          (errorMsg) => {
-            // Optional: console.warn("QR error:", errorMsg);
-          }
-        );
-  
-        // iOS fix: manually set video attributes
-        setTimeout(() => {
-          const video = document.querySelector("#reader video");
-          if (video) {
-            video.setAttribute("playsinline", true);
-            video.setAttribute("autoplay", true);
-            video.setAttribute("muted", true);
-          }
-        }, 500);
+        // Initialize and start the scanner
+        scanner = new QrScanner(videoElem, result => {
+          console.log("✅ Scanned:", result);
+          resultElem.innerHTML = `<strong>✅ Check-In:</strong><br>${result}`;
+          scanner.stop();
+        });
+
+        await scanner.start();
       } catch (err) {
-        console.error("⚠️ Camera init failed:", err);
-        alert("Camera permission denied or not available.");
+        console.error("⚠️ Scanner error:", err);
+        alert("Camera access failed or not supported.");
+        startBtn.disabled = false;
+        videoElem.style.display = 'none';
       }
-    }
-  
-    startBtn.addEventListener("click", startScanner);
+    });
   </script>
-  
 </body>
 </html>
