@@ -74,47 +74,57 @@
     const startBtn = document.getElementById("startBtn");
     const reader = document.getElementById("reader");
     const result = document.getElementById("result");
-
-    startBtn.addEventListener("click", () => {
+  
+    async function startScanner() {
       const authCode = document.getElementById("authCode").value;
-      
-      // ✅ Customize this check to your organizer code
+  
       if (authCode !== "secret123") {
         alert("❌ Invalid organizer code.");
         return;
       }
-
-      startBtn.disabled = true;
-      reader.style.display = "block";
-
-      const qrScanner = new Html5Qrcode("reader");
-
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then((stream) => {
-          stream.getTracks().forEach(track => track.stop()); // Close stream after getting permission
-        })
-        .catch((err) => {
-          alert("Camera access denied or not supported: " + err);
-        });
-
-      qrScanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText, decodedResult) => {
-          console.log("✅ Scanned:", decodedText);
-          result.innerHTML = `<strong>✅ Check-In:</strong><br>${decodedText}`;
-          qrScanner.stop();
-        },
-        (errorMsg) => {
-          // optional: console.log("No QR found", errorMsg);
-        }
-      ).catch((err) => {
-        console.error("Camera access error:", err);
-        alert("⚠️ Camera access failed. Please check browser permissions.");
-        startBtn.disabled = false;
-        reader.style.display = "none";
-      });
-    });
+  
+      try {
+        // 🔒 Explicitly ask for permission first
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop());
+  
+        startBtn.disabled = true;
+        reader.style.display = "block";
+  
+        const qrScanner = new Html5Qrcode("reader");
+  
+        await qrScanner.start(
+          { facingMode: { exact: "environment" } },
+          { fps: 10, qrbox: 250 },
+          (decodedText, decodedResult) => {
+            console.log("✅ Scanned:", decodedText);
+            result.innerHTML = `<strong>✅ Check-In:</strong><br>${decodedText}`;
+            qrScanner.stop().then(() => {
+              reader.innerHTML = ""; // clean up camera stream
+            });
+          },
+          (errorMsg) => {
+            // Optional: console.warn("QR error:", errorMsg);
+          }
+        );
+  
+        // iOS fix: manually set video attributes
+        setTimeout(() => {
+          const video = document.querySelector("#reader video");
+          if (video) {
+            video.setAttribute("playsinline", true);
+            video.setAttribute("autoplay", true);
+            video.setAttribute("muted", true);
+          }
+        }, 500);
+      } catch (err) {
+        console.error("⚠️ Camera init failed:", err);
+        alert("Camera permission denied or not available.");
+      }
+    }
+  
+    startBtn.addEventListener("click", startScanner);
   </script>
+  
 </body>
 </html>
