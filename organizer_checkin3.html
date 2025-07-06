@@ -53,6 +53,20 @@
       color: green;
       word-wrap: break-word;
     }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-family: monospace;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: left;
+    }
+    th {
+      background-color: #f5f5f5;
+    }
   </style>
 </head>
 <body>
@@ -68,21 +82,37 @@
     <div id="result"></div>
   </div>
 
-  <!-- QR Scanner Library (ESM CDN) -->
   <script type="module">
     import QrScanner from 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js';
     QrScanner.WORKER_PATH = 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
     const startBtn = document.getElementById('startBtn');
-    const authInput = document.getElementById('authCode');
     const videoElem = document.getElementById('video');
     const resultElem = document.getElementById('result');
 
-    let scanner;
+    function renderJsonAsTable(jsonData) {
+      let html = '<table>';
+      for (const [key, value] of Object.entries(jsonData)) {
+        html += '<tr><th>' + key + '</th><td>';
+        if (typeof value === 'object' && value !== null) {
+          html += renderJsonAsTable(value);
+        } else {
+          html += value;
+        }
+        html += '</td></tr>';
+      }
+      html += '</table>';
+      return html;
+    }
 
-    startBtn.addEventListener('click', async () => {
-      const authCode = authInput.value.trim();
-      if (authCode !== 'secret123') {
+    function hexToUtf8(hex) {
+      const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+      return new TextDecoder().decode(bytes);
+    }
+
+    async function startScanner() {
+      const authCode = document.getElementById('authCode').value.trim();
+      if (authCode !== '123') {
         alert("❌ Invalid organizer code.");
         return;
       }
@@ -90,23 +120,37 @@
       startBtn.disabled = true;
       videoElem.style.display = 'block';
 
-      try {
-        scanner = new QrScanner(videoElem, result => {
-          console.log("✅ Scanned:", result);
-          resultElem.innerHTML = `<strong>✅ Check-In:</strong><br>${result}`;
-          scanner.stop();
-        }, {
-          returnDetailedScanResult: true
-        });
+      const scanner = new QrScanner(videoElem, result => {
+        console.log("✅ Scanned:", result);
+        if (/^https?:\/\/.+\?.*data=/.test(result)) {
+          const url = new URL(result);
+          const hexData = url.searchParams.get("data");
+          try {
+            const jsonStr = hexToUtf8(decodeURIComponent(hexData));
+            const jsonObj = JSON.parse(jsonStr);
+            const main = jsonObj.data || {};
+            resultElem.innerHTML = `<strong>✅ Decoded Data:</strong><br>` + renderJsonAsTable(main);
+          } catch (e) {
+            resultElem.innerHTML = `<span style="color: red">❌ Failed to decode embedded data.</span>`;
+            console.error("Decode error:", e);
+          }
+        } else {
+          resultElem.innerHTML = `<strong>✅ QR Text:</strong><br>${result}`;
+        }
+        scanner.stop();
+      });
 
+      try {
         await scanner.start();
       } catch (err) {
-        console.error("⚠️ Scanner error:", err);
-        alert("Camera access failed or not supported.");
+        alert("Camera access denied or not supported.");
+        console.error(err);
         startBtn.disabled = false;
         videoElem.style.display = 'none';
       }
-    });
+    }
+
+    startBtn.addEventListener('click', startScanner);
   </script>
 </body>
 </html>
