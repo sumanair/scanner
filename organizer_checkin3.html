@@ -71,6 +71,7 @@
   <!-- QR Scanner Library (ESM CDN) -->
   <script type="module">
     import QrScanner from 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js';
+    QrScanner.WORKER_PATH = 'https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner-worker.min.js';
 
     const startBtn = document.getElementById('startBtn');
     const authInput = document.getElementById('authCode');
@@ -81,7 +82,7 @@
 
     startBtn.addEventListener('click', async () => {
       const authCode = authInput.value.trim();
-      if (authCode !== '123') {
+      if (authCode !== 'secret123') {
         alert("❌ Invalid organizer code.");
         return;
       }
@@ -90,11 +91,12 @@
       videoElem.style.display = 'block';
 
       try {
-        // Initialize and start the scanner
         scanner = new QrScanner(videoElem, result => {
           console.log("✅ Scanned:", result);
           resultElem.innerHTML = `<strong>✅ Check-In:</strong><br>${result}`;
           scanner.stop();
+        }, {
+          returnDetailedScanResult: true
         });
 
         await scanner.start();
