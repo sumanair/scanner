@@ -68,7 +68,7 @@
   </div>
 
   <!-- QR Code Scanner Library -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.9/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
   <script>
     const startBtn = document.getElementById("startBtn");
@@ -88,6 +88,14 @@
       reader.style.display = "block";
 
       const qrScanner = new Html5Qrcode("reader");
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+          stream.getTracks().forEach(track => track.stop()); // Close stream after getting permission
+        })
+        .catch((err) => {
+          alert("Camera access denied or not supported: " + err);
+        });
 
       qrScanner.start(
         { facingMode: "environment" },
