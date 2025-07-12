@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QR Data Viewer</title> <!-- This will be overridden via script -->
+  <title>QR Data Viewer</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
@@ -142,39 +142,45 @@
       html += '</table>';
       return html;
     }
-  
-    function hexToUtf8(hex) {
-      const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
-      return new TextDecoder().decode(bytes);
+
+    function base64ToUtf8(base64) {
+      try {
+        const base64Fixed = base64.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonStr = atob(base64Fixed);
+        return decodeURIComponent(escape(jsonStr));
+      } catch (e) {
+        console.error("Base64 decoding error:", e);
+        return null;
+      }
     }
-  
+
     function init() {
       const urlParams = new URLSearchParams(window.location.search);
-      const hexData = urlParams.get('data');
-  
+      const base64Data = urlParams.get('data');
+
       const decodedDataElement = document.getElementById('decodedData');
       const jsonToggle = document.getElementById('jsonToggle');
       const jsonContent = document.getElementById('jsonContent');
-  
-      if (!hexData) {
+
+      if (!base64Data) {
         decodedDataElement.innerText = "No 'data' parameter found in URL.";
         return;
       }
-  
+
       let jsonObj;
       try {
-        const jsonStr = hexToUtf8(decodeURIComponent(hexData));
+        const jsonStr = base64ToUtf8(base64Data);
         jsonObj = JSON.parse(jsonStr);
       } catch (e) {
         console.error("Decoding or parsing failed:", e);
-        decodedDataElement.innerText = "Error parsing hex-encoded data.";
+        decodedDataElement.innerText = "Error parsing base64-encoded data.";
         return;
       }
-  
+
       const main = jsonObj.data || {};
       const meta = jsonObj.metadata_from_qrmaker || {};
-  
-      // ✅ Set title and heading
+
+      // Set title and heading
       if (main.event) {
         const safeEventName = main.event.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const fullTitle = `NSS NT ${safeEventName} Reservation Confirmation`;
@@ -182,27 +188,24 @@
         const heading = document.querySelector('h1');
         if (heading) heading.innerHTML = fullTitle;
       }
-  
+
       try {
         decodedDataElement.innerHTML = renderJsonAsTable(main);
       } catch (e) {
         console.error("Error rendering main table:", e);
         decodedDataElement.innerText = "Error displaying data.";
       }
-  
+
       jsonContent.innerText = JSON.stringify(jsonObj, null, 2);
-  
+
       jsonToggle.onclick = () => {
         const isHidden = jsonContent.style.display === 'none';
         jsonContent.style.display = isHidden ? 'block' : 'none';
         jsonToggle.innerText = isHidden ? 'Hide Raw JSON' : 'Show Raw JSON';
       };
     }
-  
-    document.addEventListener("DOMContentLoaded", init);
 
+    document.addEventListener("DOMContentLoaded", init);
   </script>
-  
-  
 </body>
 </html>
